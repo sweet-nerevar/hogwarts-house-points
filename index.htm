@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hogwarts House Points</title>
+<style>
+  :root {
+    --ink:#eadfca;
+    --panel:#f6eddc;
+    --panel-border:#b4874e;
+    --shadow:rgba(8,10,14,.26);
+    --scene-width:1672px;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:transparent; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    padding: 10px;
+  }
+
+  .app {
+    width:min(var(--scene-width), 100%);
+    margin:0 auto;
+  }
+
+  .scene {
+    position:absolute;
+    width:100%;
+    aspect-ratio:1672 / 941;
+  }
+
+  .frame {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    pointer-events:none;
+    user-select:none;
+    z-index:4;
+  }
+
+.slot {
+  position:absolute;
+  z-index:2;
+  pointer-events:none;
+}
+
+/* координаты колбочек */
+.slot[data-house="gryffindor"] {
+  left:10.8%;
+  top:32%;
+  width:29%;
+  height:60.9%;
+}
+
+.slot[data-house="slytherin"] {
+  left:26.9%;
+  top:32%;
+  width:29%;
+  height:60.9%;
+}
+
+.slot[data-house="hufflepuff"] {
+  left:44.1%;
+  top:32%;
+  width:29%;
+  height:60.9%;
+}
+
+.slot[data-house="ravenclaw"] {
+  left:60.2%;
+  top:32%;
+  width:29%;
+  height:60.9%;
+}
+
+.vial-wrap {
+  position:absolute;
+  left:30%;
+  top:0;
+  width:40%;
+  height:73.2%;
+}
+
+  .vial {
+    --fill: 0%;
+    --house: #b51f18;
+    --house-top: #d85645;
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:30px 30px 18px 18px / 18px 18px 16px 16px;
+    overflow:hidden;
+    background:
+      linear-gradient(90deg,
+        rgba(0, 0, 0,.40) 0%,
+        rgba(0, 0, 0,.12) 10%,
+        rgba(0, 0, 128,.10) 22%,
+        rgba(255, 255, 255,.15) 48%,
+        rgba(184, 134, 11,.05) 70%,
+        rgba(47, 79, 79,.26) 100%),
+      linear-gradient(180deg, rgba(25, 25, 112,.20), rgba(91,112,125,.06));
+    box-shadow:
+      inset 0 0 0 2px rgba(239,247,250,.52),
+      inset 0 0 24px rgba(185,215,226,.16),
+      inset 9px 0 14px rgba(255,255,255,.10),
+      inset -9px 0 14px rgba(255,255,255,.04),
+      0 8px 18px var(--shadow);
+    backdrop-filter: blur(1px);
+  }
+
+  .vial::before {
+    content:"";
+    position:absolute;
+    left:16%; right:16%; top:2.7%;
+    height:4.8%;
+    border-radius:999px;
+    background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.22));
+    opacity:.72;
+    filter:blur(.2px);
+  }
+
+  .liquid {
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:var(--fill);
+    transition:height .8s cubic-bezier(.2,.78,.22,1);
+    background:
+      radial-gradient(circle at 25% 30%, rgba(255,255,255,.10) 0 1px, transparent 2px),
+      radial-gradient(circle at 65% 18%, rgba(255,255,255,.14) 0 1px, transparent 2px),
+      radial-gradient(circle at 52% 68%, rgba(255,255,255,.10) 0 1.5px, transparent 6px),
+      linear-gradient(180deg, var(--house-top), var(--house) 65%, color-mix(in srgb, var(--house) 78%, black 22%));
+    background-size: 22px 24px, 20px 24px, 26px 22px, 100% 100%;
+    box-shadow:
+      inset 0 10px 12px rgba(255,255,255,.08),
+      inset 0 -16px 18px rgba(0,0,0,.13);
+  }
+
+.liquid::before {
+  content:"";
+  position:absolute;
+  left:-2%;
+  right:-2%;
+  top:-4px;
+  height:8px;
+  border-radius:50%;
+  background:rgba(255,255,255,.12);
+  box-shadow:0 2px 5px rgba(0,0,0,.12);
+}
+
+  .liquid::after {
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(90deg, rgba(255,255,255,.15), transparent 18%, rgba(255,255,255,.06) 46%, transparent 68%, rgba(255,255,255,.12));
+    mix-blend-mode:screen;
+  }
+
+.house-plate {
+  position:absolute;
+  left:9.5%;
+  top:74%;
+  width:81%;
+  height:12%;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  margin:0;
+  min-height:0;
+  pointer-events:auto;
+}
+
+.score-view,
+.score-input {
+  position:static;
+  transform:none;
+
+  width:100%;
+  text-align:center;
+  background:transparent;
+  border:none;
+  outline:none;
+
+  color:#2F4F4F;
+  font-family:Georgia, "Times New Roman", serif;
+  font-size:clamp(12px, 1.7vw, 28px);
+  line-height:1.5;
+
+  letter-spacing:.09em;
+  text-shadow:0 1px 3px rgba(0,0,0,.65);
+  font-variant-numeric:tabular-nums;
+}
+
+  .score-input {
+    background:rgba(18,17,14,.28);
+    border:1px solid rgba(234,211,160,.35);
+    border-radius:999px;
+    padding:1px 2px;
+    box-shadow: inset 0 0 10px rgba(255,255,255,.05);
+    appearance:textfield;
+    -moz-appearance:textfield;
+  }
+  .score-input::-webkit-outer-spin-button,
+  .score-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
+  .house-name {
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+
+  .auth-box {
+    margin-bottom:10px;
+    padding:10px;
+    border-radius:10px;
+    background:rgba(255,249,238,.07);
+    border:1px solid rgba(222,201,153,.15);
+  }
+  .auth-row {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+    gap:7px;
+    align-items:center;
+  }
+  .auth-row input {
+    min-width:0;
+    width:100%;
+    padding:8px 9px;
+    border-radius:8px;
+    border:1px solid rgba(222,201,153,.22);
+    background:rgba(255,249,238,.10);
+    color:#f6ead1;
+    outline:none;
+    font:13px/1.2 Georgia, serif;
+  }
+  .auth-row input::placeholder { color:rgba(246,234,209,.55); }
+  .auth-signed-in {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    font-size:12px;
+    color:#e6d7bb;
+  }
+  .auth-signed-in[hidden], .auth-row[hidden] { display:none !important; }
+  .master-grid.locked { opacity:.35; pointer-events:none; filter:grayscale(.35); }
+  @media (max-width:720px) {
+    .auth-row { grid-template-columns:1fr; }
+  }
+
+  .master-tools {
+    display:none;
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:14px;
+    background:rgba(17,18,20,.42);
+    border:1px solid rgba(219,193,137,.18);
+    backdrop-filter: blur(5px);
+  }
+  .master .master-tools { display:block; }
+
+  .master-grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+  }
+
+  .mini-box {
+    padding:8px;
+    border-radius:10px;
+    background:rgba(255,249,238,.08);
+    border:1px solid rgba(222,201,153,.15);
+    text-align:center;
+  }
+  .mini-box strong {
+    display:block;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#e6d7bb;
+    margin-bottom:6px;
+  }
+  .step-row {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:5px;
+  }
+  button {
+    appearance:none;
+    border:1px solid rgba(205,178,126,.22);
+    background:rgba(255,250,239,.12);
+    color:#f6ead1;
+    padding:6px 5px;
+    border-radius:8px;
+    font:600 12px/1 Georgia, serif;
+    cursor:pointer;
+  }
+  button:hover { background:rgba(255,250,239,.18); }
+  button:active { transform:translateY(1px); }
+
+  .status {
+    min-height:1.2em;
+    margin-top:8px;
+    text-align:center;
+    font-size:12px;
+    color:#e5d7bc;
+    opacity:.88;
+  }
+  .status.error { color:#ffb4a8; }
+  .master-note {
+    margin-top:6px;
+    text-align:center;
+    font-size:11px;
+    color:#d4c2a2;
+    opacity:.74;
+  }
+
+  .gryffindor .vial { --house:#af211c; --house-top:#d84b3e; }
+  .slytherin .vial  { --house:#219354; --house-top:#4cc07a; }
+  .hufflepuff .vial { --house:#c09219; --house-top:#e2bd4c; }
+  .ravenclaw .vial  { --house:#2b73be; --house-top:#52a0ea; }
+
+</style>
+</head>
+<body>
+<div class="app" id="board">
+  <div class="scene" id="scene">
+    <img class="frame" src="" alt="" />
+    <div class="slot gryffindor" data-house="gryffindor">
+      <span class="house-name">Gryffindor</span>
+      <div class="vial-wrap"><div class="vial" style="--fill:0%"><div class="liquid"></div></div></div>
+      <div class="house-plate" data-plate="gryffindor"></div>
+    </div>
+    <div class="slot slytherin" data-house="slytherin">
+      <span class="house-name">Slytherin</span>
+      <div class="vial-wrap"><div class="vial" style="--fill:0%"><div class="liquid"></div></div></div>
+      <div class="house-plate" data-plate="slytherin"></div>
+    </div>
+    <div class="slot hufflepuff" data-house="hufflepuff">
+      <span class="house-name">Hufflepuff</span>
+      <div class="vial-wrap"><div class="vial" style="--fill:0%"><div class="liquid"></div></div></div>
+      <div class="house-plate" data-plate="hufflepuff"></div>
+    </div>
+    <div class="slot ravenclaw" data-house="ravenclaw">
+      <span class="house-name">Ravenclaw</span>
+      <div class="vial-wrap"><div class="vial" style="--fill:0%"><div class="liquid"></div></div></div>
+      <div class="house-plate" data-plate="ravenclaw"></div>
+    </div>
+  </div>
+
+  <section class="master-tools" id="masterTools">
+    <div class="auth-box" id="authBox">
+      <div class="auth-row" id="loginPanel">
+        <input id="masterEmail" type="email" autocomplete="username" placeholder="Master email" />
+        <input id="masterPassword" type="password" autocomplete="current-password" placeholder="Password" />
+        <button id="loginBtn" type="button">Sign in</button>
+      </div>
+      <div class="auth-signed-in" id="signedInPanel" hidden>
+        <span id="signedInAs">Master signed in</span>
+        <button id="logoutBtn" type="button">Sign out</button>
+      </div>
+    </div>
+    <div class="master-grid locked" id="masterGrid"></div>
+    <div class="status" id="status"></div>
+    <div class="master-note">Master mode uses your Supabase account. Player view stays read-only.</div>
+  </section>
+</div>
+
+<script>
+const CONFIG = {
+  SUPABASE_URL: "https://ktssmsluniqjercbwodg.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_8gIOTlpU6JmPkhVW89yXTQ_vygcKiHL",
+  BOARD_ID: "main",
+  MAX_SCORE: 300,
+  POLL_MS: 3000,
+  FRAME_IMAGE: "https://www.dropbox.com/scl/fi/4jb08no2isiiw4f3eb970/a37c8e5a-d4d6-4476-8a81-735ace47d71d.png?rlkey=lj8h6l4z2a4kjp778sblsklxw&st=g32nkyaj&raw=1"
+};
+
+const HOUSES = [
+  { key:"gryffindor", name:"Gryffindor", start:50 },
+  { key:"slytherin",  name:"Slytherin",  start:50 },
+  { key:"hufflepuff", name:"Hufflepuff", start:50 },
+  { key:"ravenclaw",  name:"Ravenclaw",  start:50 }
+];
+
+const isMaster = new URLSearchParams(location.search).get("master") === "1";
+if (isMaster) document.getElementById("board").classList.add("master");
+document.querySelector('.frame').src = CONFIG.FRAME_IMAGE;
+
+const state = Object.fromEntries(HOUSES.map(h => [h.key, h.start]));
+const $ = (s, root=document) => root.querySelector(s);
+const SESSION_KEY = 'hogwarts-supabase-master-session';
+const EMAIL_KEY = 'hogwarts-supabase-master-email';
+let authSession = null;
+
+function clamp(n,min,max){ return Math.min(max,Math.max(min,n)); }
+function pct(points){ return clamp(points / CONFIG.MAX_SCORE * 100, 0, 100); }
+function isAuthenticated(){ return !!authSession?.access_token; }
+
+function loadSession(){
+  try {
+    authSession = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+  } catch(e){ authSession = null; }
+}
+
+function saveSession(data){
+  if (!data?.access_token) return;
+  authSession = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token || authSession?.refresh_token || null,
+    expires_at: Date.now() + Math.max(30, Number(data.expires_in || 3600)) * 1000,
+    user: data.user || authSession?.user || null
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(authSession));
+}
+
+function clearSession(){
+  authSession = null;
+  localStorage.removeItem(SESSION_KEY);
+}
+
+async function authFetch(path, options={}){
+  const res = await fetch(`${CONFIG.SUPABASE_URL}/auth/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: CONFIG.SUPABASE_ANON_KEY,
+      'Content-Type':'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch(e) { data = text; }
+  if (!res.ok) throw new Error(data?.msg || data?.message || data?.error_description || data?.error || `HTTP ${res.status}`);
+  return data;
+}
+
+async function signIn(email, password){
+  const data = await authFetch('token?grant_type=password', {
+    method:'POST',
+    body:JSON.stringify({ email, password })
+  });
+  saveSession(data);
+  localStorage.setItem(EMAIL_KEY, email);
+  return data;
+}
+
+async function refreshSession(){
+  if (!authSession?.refresh_token) throw new Error('No refresh token');
+  const data = await authFetch('token?grant_type=refresh_token', {
+    method:'POST',
+    body:JSON.stringify({ refresh_token: authSession.refresh_token })
+  });
+  saveSession(data);
+  return authSession;
+}
+
+async function getAccessToken(){
+  if (!authSession?.access_token) return null;
+  if (!authSession.expires_at || authSession.expires_at - Date.now() < 60000) {
+    try { await refreshSession(); }
+    catch(err) { clearSession(); renderMasterAuth(); throw new Error('Session expired. Sign in again.'); }
+  }
+  return authSession.access_token;
+}
+
+async function signOut(){
+  const token = authSession?.access_token;
+  clearSession();
+  if (token) {
+    try {
+      await fetch(`${CONFIG.SUPABASE_URL}/auth/v1/logout`, {
+        method:'POST',
+        headers:{ apikey:CONFIG.SUPABASE_ANON_KEY, Authorization:`Bearer ${token}` }
+      });
+    } catch(e){}
+  }
+}
+
+function mountPlates(){
+  HOUSES.forEach(h => {
+    const plate = document.querySelector(`[data-plate="${h.key}"]`);
+    if (!plate) return;
+    if (isMaster && isAuthenticated()) {
+      plate.innerHTML = `<input class="score-input" type="number" inputmode="numeric" data-input="${h.key}" value="${state[h.key]}" aria-label="${h.name} points" />`;
+    } else {
+      plate.innerHTML = `<div class="score-view" data-score="${h.key}">${state[h.key]}</div>`;
+    }
+  });
+}
+
+function buildMasterTools(){
+  if (!isMaster) return;
+  $('#masterGrid').innerHTML = HOUSES.map(h => `
+    <div class="mini-box">
+      <strong>${h.name}</strong>
+      <div class="step-row">
+        <button data-house="${h.key}" data-delta="-10">−10</button>
+        <button data-house="${h.key}" data-delta="-1">−1</button>
+        <button data-house="${h.key}" data-delta="1">+1</button>
+        <button data-house="${h.key}" data-delta="10">+10</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderMasterAuth(){
+  if (!isMaster) return;
+  const loggedIn = isAuthenticated();
+  $('#loginPanel').hidden = loggedIn;
+  $('#signedInPanel').hidden = !loggedIn;
+  $('#masterGrid').classList.toggle('locked', !loggedIn);
+  if (loggedIn) {
+    const email = authSession?.user?.email || localStorage.getItem(EMAIL_KEY) || 'master';
+    $('#signedInAs').textContent = `Signed in as ${email}`;
+  } else {
+    $('#masterEmail').value = localStorage.getItem(EMAIL_KEY) || '';
+    $('#masterPassword').value = '';
+  }
+  mountPlates();
+  HOUSES.forEach(h => updateVisual(h.key, state[h.key]));
+}
+
+function updateVisual(house, value, syncInput=true){
+  state[house] = Number.isFinite(Number(value)) ? Math.trunc(Number(value)) : 0;
+  const slot = document.querySelector(`.slot[data-house="${house}"]`);
+  const vial = slot?.querySelector('.vial');
+  const score = document.querySelector(`[data-score="${house}"]`);
+  const input = document.querySelector(`[data-input="${house}"]`);
+  if (vial) vial.style.setProperty('--fill', pct(state[house]) + '%');
+  if (score) score.textContent = state[house];
+  if (syncInput && input && document.activeElement !== input) input.value = state[house];
+}
+
+function setStatus(msg='', isError=false){
+  if (!isMaster) return;
+  const el = $('#status');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+}
+
+async function dataApi(path, options={}, requireAuth=false){
+  let bearer = CONFIG.SUPABASE_ANON_KEY;
+  if (requireAuth) {
+    bearer = await getAccessToken();
+    if (!bearer) throw new Error('Sign in as master first.');
+  }
+  const res = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: CONFIG.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${bearer}`,
+      'Content-Type':'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text;
+    try {
+      const j = JSON.parse(text);
+      message = j.message || j.hint || j.details || text;
+    } catch(e){}
+    throw new Error(message || `HTTP ${res.status}`);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+async function readRemote(){
+  const rows = await dataApi(`house_points?board_id=eq.${encodeURIComponent(CONFIG.BOARD_ID)}&select=house,points`);
+  if (Array.isArray(rows)) rows.forEach(r => {
+    if (state[r.house] !== undefined) updateVisual(r.house, r.points);
+  });
+}
+
+async function writeRemote(house, points){
+  await dataApi(
+    `house_points?board_id=eq.${encodeURIComponent(CONFIG.BOARD_ID)}&house=eq.${encodeURIComponent(house)}`,
+    {
+      method:'PATCH',
+      headers:{ Prefer:'return=minimal' },
+      body:JSON.stringify({ points:Math.trunc(points), updated_at:new Date().toISOString() })
+    },
+    true
+  );
+}
+
+async function commit(house, value){
+  if (!isAuthenticated()) {
+    setStatus('Sign in as master first.', true);
+    return;
+  }
+  const points = Math.trunc(Number(value) || 0);
+  const old = state[house];
+  updateVisual(house, points);
+  try {
+    setStatus('Saving…');
+    await writeRemote(house, points);
+    setStatus('Saved ✓');
+  } catch(err) {
+    updateVisual(house, old);
+    setStatus('Could not save: ' + err.message, true);
+  }
+}
+
+function bindMasterEvents(){
+  if (!isMaster) return;
+
+  $('#loginBtn').addEventListener('click', async () => {
+    const email = $('#masterEmail').value.trim();
+    const password = $('#masterPassword').value;
+    if (!email || !password) {
+      setStatus('Enter your email and password.', true);
+      return;
+    }
+    try {
+      setStatus('Signing in…');
+      await signIn(email, password);
+      renderMasterAuth();
+      await readRemote();
+      setStatus('Master signed in ✓');
+    } catch(err) {
+      clearSession();
+      renderMasterAuth();
+      setStatus('Sign-in failed: ' + err.message, true);
+    }
+  });
+
+  $('#masterPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('#loginBtn').click();
+  });
+
+  $('#logoutBtn').addEventListener('click', async () => {
+    await signOut();
+    renderMasterAuth();
+    setStatus('Signed out.');
+  });
+
+  document.addEventListener('change', e => {
+    if (e.target.matches('input[data-input]')) commit(e.target.dataset.input, e.target.value);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('input[data-input]')) {
+      e.target.blur();
+    }
+  });
+
+  $('#masterGrid').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-house]');
+    if (!btn || !isAuthenticated()) return;
+    const house = btn.dataset.house;
+    commit(house, state[house] + Number(btn.dataset.delta));
+  });
+}
+
+async function restoreAuth(){
+  if (!isMaster) return;
+  loadSession();
+  if (!authSession) return;
+  try {
+    await getAccessToken();
+  } catch(err) {
+    clearSession();
+  }
+}
+
+async function init(){
+  buildMasterTools();
+  bindMasterEvents();
+  await restoreAuth();
+  mountPlates();
+  renderMasterAuth();
+  HOUSES.forEach(h => updateVisual(h.key, state[h.key]));
+
+  try {
+    await readRemote();
+    if (isMaster) setStatus(isAuthenticated() ? 'Connected • master signed in ✓' : 'Connected • sign in to edit');
+  } catch(err) {
+    if (isMaster) setStatus('Supabase read failed: ' + err.message, true);
+  }
+
+  setInterval(() => readRemote().catch(() => {}), CONFIG.POLL_MS);
+}
+
+init();
+</script>
+
+</body>
+</html>
